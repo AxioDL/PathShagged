@@ -23,7 +23,7 @@ class CSwooshDescription;
 
 class CParticleSwoosh : public CParticleGen {
   friend class CParticleSwooshShaders;
-
+public:
   struct SSwooshData {
     bool x0_active;
     float x4_leftRad;
@@ -56,6 +56,7 @@ class CParticleSwoosh : public CParticleGen {
     , x74_velocity(vel) {}
   };
 
+private:
   TLockedToken<CSwooshDescription> x1c_desc;
   u32 x28_curFrame = 0;
   int x2c_PSLT = 0;
@@ -162,6 +163,11 @@ public:
   void Reset() override {}
   FourCC Get4CharId() const override { return FOURCC('SWHC'); }
   void SetRenderGaps(bool r) { x1d0_27_renderGaps = r; }
+  size_t GetSwooshDataCount() const { return x15c_swooshes.size(); }
+  SSwooshData& GetSwooshData(size_t idx) { return x15c_swooshes[idx]; }
+  const SSwooshData& GetSwooshData(size_t idx) const { return x15c_swooshes[idx]; }
+  std::vector<SSwooshData>& GetSwooshVector() { return x15c_swooshes; }
+  const std::vector<SSwooshData>& GetSwooshVector() const { return x15c_swooshes; }
 
   void DoWarmupUpdate() {
     x1d0_26_forceOneUpdate = true;
