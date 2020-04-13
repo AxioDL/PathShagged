@@ -6,6 +6,8 @@
 #include "Runtime/Input/CRumbleManager.hpp"
 #include "Runtime/World/CGameLight.hpp"
 #include "Runtime/World/CWorld.hpp"
+#include "Runtime/Graphics/CBooRenderer.hpp"
+
 #include "DataSpec/DNAMP1/SFX/Weapons.h"
 
 #include "TCastTo.hpp" // Generated file, do not modify include path
@@ -13,16 +15,18 @@
 namespace metaforce {
 
 CWaveBuster::CWaveBuster(const TToken<CWeaponDescription>& desc, EWeaponType type, const zeus::CTransform& xf,
-                                     EMaterialTypes matType, const CDamageInfo& dInfo, TUniqueId uid, TAreaId aid, TUniqueId owner,
-                                     TUniqueId homingTarget, EProjectileAttrib attrib)
-    : CGameProjectile(true, desc, "WaveBuster", type, xf, matType, dInfo, uid, aid, owner, homingTarget, attrib, false,
-                      zeus::skOne3f, {}, -1, false)
-    , x2e8_originalXf(xf)
-    , x348_targetPoint(x2e8_originalXf.basis[1].normalized() * 25.f + x2e8_originalXf.origin)
-    , x354_busterSwoosh1(g_SimplePool->GetObj("BusterSwoosh1"))
-    , x360_busterSwoosh2(g_SimplePool->GetObj("BusterSwoosh2"))
-    , x36c_busterSparks(g_SimplePool->GetObj("BusterSparks"))
-    , x378_busterLight(g_SimplePool->GetObj("BusterLight")) {
+                         EMaterialTypes matType, const CDamageInfo& dInfo, TUniqueId uid, TAreaId aid, TUniqueId owner,
+                         TUniqueId homingTarget, EProjectileAttrib attrib)
+: CGameProjectile(true, desc, "WaveBuster", type, xf, matType, dInfo, uid, aid, owner, homingTarget, attrib, false,
+                  zeus::skOne3f, {}, -1, false)
+, x2e8_originalXf(xf)
+, x348_targetPoint(x2e8_originalXf.basis[1].normalized() * 25.f + x2e8_originalXf.origin)
+, x354_busterSwoosh1(g_SimplePool->GetObj("BusterSwoosh1"))
+, x360_busterSwoosh2(g_SimplePool->GetObj("BusterSwoosh2"))
+, x36c_busterSparks(g_SimplePool->GetObj("BusterSparks"))
+, x378_busterLight(g_SimplePool->GetObj("BusterLight"))
+, m_lineRenderer1(CLineRenderer::EPrimitiveMode::LineStrip, 36, nullptr, true)
+, m_lineRenderer2(CLineRenderer::EPrimitiveMode::LineStrip, 36, nullptr, true) {
   x354_busterSwoosh1.GetObj();
   x360_busterSwoosh2.GetObj();
   x36c_busterSparks.GetObj();
@@ -75,13 +79,13 @@ void CWaveBuster::Think(float dt, CStateManager& mgr) {
       x348_targetPoint += zeus::CVector3f{x, 0.f, z};
       SetTranslation(x348_targetPoint);
     } else {
-      sub_801bf598(dt, mgr);
+      UpdateTargetSeek(dt, mgr);
     }
   } else {
     UpdateTargetDamage(dt, mgr);
   }
 
-  if (UpdateTargetSeek(dt, mgr)) {
+  if (UpdateBeamFrame(mgr, dt)) {
     ResetBeam(true);
   }
 
@@ -224,14 +228,66 @@ void CWaveBuster::sub_801be350() {
   x388_busterSwoosh2Gen->Render(GetActorLights());
   x38c_busterSparksGen->Render(GetActorLights());
 }
+void CWaveBuster::sub_801be5c0() {
+  zeus::CVector3f local_19c = x2e8_originalXf.inverse() * x2e8_originalXf.origin;
+  zeus::CVector3f local_1a8 = x2e8_originalXf.inverse() * x318_;
+  zeus::CVector3f local_1b4 = x2e8_originalXf.inverse() * x324_;
+  zeus::CVector3f local_1c0 = x2e8_originalXf.inverse() * GetTranslation();
+  float dVar13 = 0.f;
+  rstl::reserved_vector<zeus::CVector3f, 36> linePoints; // Used to be L2Cache access
+  linePoints.resize(36);
+  float dVar12 = 0.16;
+  float dVar21 = 1.f;
+  float dVar22 = 2.f * M_PIF;
+  float dVar17 = local_19c.z();
+  float dVar18 = local_19c.y();
+  float dVar19 = local_19c.x();
+  while (dVar12 <= dVar21) {
+    zeus::CVector3f local_214 = zeus::getBezierPoint(local_19c, local_1a8, local_1b4, local_1c0, dVar12);
+    float dVar16 = local_214.x();
+    float dVar15 = local_214.y();
+    float dVar14 = local_214.z();
 
-void CWaveBuster::sub_801be5c0() {}
+    float fVar1 = 0.f;
+    for (size_t i = 0; i < 36; ++i) {
+      float dVar5 = x394_rand.Range(-0.041667f, 0.041667f);
+      float dVar20 = x394_rand.Range(-0.041667f, 0.041667f);
+      float dVar6 = std::cos(fVar1 + x398_);
+      float dVar9 = dVar13 * dVar6 + dVar5;
+      dVar6 = std::sin(fVar1 + x398_);
+      dVar5 = fVar1 / dVar22;
+      float dVar7 = dVar21 - dVar5;
+      fVar1 += 0.17453294f;
+      linePoints[i] =
+          zeus::CVector3f{dVar19 * dVar7 + (dVar16 * dVar5) + dVar9, dVar18 * dVar7 + (dVar15 * dVar5) + dVar9,
+                          dVar17 * dVar7 + (dVar14 * dVar5) + (dVar13 * dVar6 + dVar20)};
+    }
+    dVar13 = 0.25f;
+    dVar12 += 0.16;
+    dVar17 = dVar14;
+    dVar18 = dVar15;
+    dVar19 = dVar16;
+  }
+  g_Renderer->SetModelMatrix(x2e8_originalXf);
+  m_lineRenderer1.Reset();
+  for (const zeus::CVector3f& vec : linePoints) {
+    m_lineRenderer1.AddVertex(vec, zeus::skWhite, 12.f/6.f);
+  }
+  m_lineRenderer1.Render();
+
+  m_lineRenderer2.Reset();
+  for (const zeus::CVector3f& vec : linePoints) {
+    m_lineRenderer2.AddVertex(vec, zeus::CColor{1.f, 0.f, 1.f, 0.5f}, 48.f/6);
+  }
+  m_lineRenderer2.Render();
+
+}
 
 CRayCastResult CWaveBuster::sub_801be010(TUniqueId uid, const zeus::CVector3f& p1, const zeus::CVector3f& p2,
                                          CStateManager& mgr) {
   return CRayCastResult();
 }
-void CWaveBuster::sub_801bf598(float dt, CStateManager& mgr) {}
+void CWaveBuster::UpdateTargetSeek(float dt, CStateManager& mgr) {}
 
 void CWaveBuster::UpdateTargetDamage(float dt, CStateManager& mgr) {
   if (const TCastToConstPtr<CActor> act = mgr.GetObjectById(x2c0_homingTargetId)) {
@@ -251,7 +307,7 @@ void CWaveBuster::UpdateTargetDamage(float dt, CStateManager& mgr) {
   x3a0_ = 0.f;
 }
 
-bool CWaveBuster::UpdateTargetSeek(float dt, CStateManager& mgr) {
+bool CWaveBuster::UpdateBeamFrame(CStateManager& mgr, float dt) {
   zeus::CVector3f local_ac = zeus::skForward;
   float viewAngle = 0.f;
   if (const TCastToConstPtr<CActor> act = mgr.GetObjectById(x2c0_homingTargetId)) {
