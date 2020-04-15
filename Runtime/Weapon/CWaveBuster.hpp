@@ -51,14 +51,16 @@ class CWaveBuster : public CGameProjectile {
 
   void RenderParticles();
   void RenderBeam();
-  CRayCastResult sub_801be010(TUniqueId uid, const zeus::CVector3f& pos, const zeus::CVector3f& dir,
-                              CStateManager& mgr);
+  CRayCastResult sub_801be010(TUniqueId uid, const zeus::CVector3f& pos, const zeus::CVector3f& dir, CStateManager& mgr,
+                              float dt);
+  bool ApplyDamageToTarget(TUniqueId damagee, const CRayCastResult& actRes, const CRayCastResult& physRes,
+                    const CRayCastResult& selfRes, CStateManager& mgr, float dt);
+  [[nodiscard]] float GetViewAngleToTarget(zeus::CVector3f& p1, const CActor& act);
   void UpdateTargetSeek(float dt, CStateManager& mgr);
   void UpdateTargetDamage(float dt, CStateManager& mgr);
   bool UpdateBeamFrame(CStateManager& mgr, float dt);
-  float GetViewAngleToTarget(zeus::CVector3f& p1, const CActor& act);
-  void sub_801bda14(CStateManager& mgr, TUniqueId& uid1, TUniqueId& uid2, const zeus::CVector3f& pos, const zeus::CVector3f& dir,
-                    float length);
+  void sub_801bda14(CStateManager& mgr, TUniqueId& physId, TUniqueId& actId, const zeus::CVector3f& start,
+                    const zeus::CVector3f& end, float length, CRayCastResult& physRes, CRayCastResult& actorRes);
   CRayCastResult SeekTarget(float dt, TUniqueId& uid, CStateManager& mgr);
 
 public:

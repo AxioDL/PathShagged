@@ -41,8 +41,9 @@ void CWaveBuster::Accept(IVisitor& visitor) { visitor.Visit(this); }
 
 void CWaveBuster::Think(float dt, CStateManager& mgr) {
   CWeapon::Think(dt, mgr);
-  if (!GetActive())
+  if (!GetActive()) {
     return;
+  }
 
   if (GetAreaIdAlways() != mgr.GetWorld()->GetCurrentAreaId()) {
     mgr.SetActorAreaId(*this, mgr.GetWorld()->GetCurrentAreaId());
@@ -56,7 +57,7 @@ void CWaveBuster::Think(float dt, CStateManager& mgr) {
   float dVar17 = 0.f;
   if (!x3d0_25_ && !x3d0_26_) {
     TUniqueId uid = kInvalidUniqueId;
-    CRayCastResult res = sub_801be010(uid, local_160, local_16c, mgr);
+    CRayCastResult res = sub_801be010(uid, local_160, local_16c, mgr, dt);
     if (res.IsValid() && res.GetT() < 25.f) {
       if (TCastToPtr<CActor> act = mgr.ObjectById(uid)) {
         act->Touch(*this, mgr);
@@ -158,8 +159,9 @@ std::optional<zeus::CAABox> CWaveBuster::GetTouchBounds() const {
 }
 
 void CWaveBuster::UpdateFx(const zeus::CTransform& xf, float dt, CStateManager& mgr) {
-  if (!GetActive())
+  if (!GetActive()) {
     return;
+  }
 
   x2e8_originalXf = xf;
   x398_ -= std::max(0.f, x398_ - (60.f * dt));
@@ -286,13 +288,40 @@ void CWaveBuster::RenderBeam() {
 }
 
 CRayCastResult CWaveBuster::sub_801be010(TUniqueId uid, const zeus::CVector3f& pos, const zeus::CVector3f& dir,
-                                         CStateManager& mgr) {
+                                         CStateManager& mgr, float dt) {
   CRayCastResult res = mgr.RayStaticIntersection(pos, dir, 25.f, xf8_filter);
-  TUniqueId uid1 = kInvalidUniqueId;
-  TUniqueId uid2 = kInvalidUniqueId;
-  sub_801bda14(mgr, uid1, uid2, pos, dir, 25.f);
+  TUniqueId physId = kInvalidUniqueId;
+  TUniqueId actId = kInvalidUniqueId;
+  CRayCastResult physRes;
+  CRayCastResult actRes;
+  sub_801bda14(mgr, physId, actId, pos, dir, 25.f, physRes, actRes);
+  if (actRes.IsValid() && ApplyDamageToTarget(physId, actRes, physRes, res, mgr, dt)) {
+    return actRes;
+  }
+
+  if (physRes.IsValid() && ApplyDamageToTarget(actId, actRes, physRes, res, mgr, dt)) {
+    return physRes;
+  }
+
   return res;
 }
+
+bool CWaveBuster::ApplyDamageToTarget(TUniqueId damagee, const CRayCastResult& actRes, const CRayCastResult& physRes,
+                               const CRayCastResult& selfRes, CStateManager& mgr, float dt) {
+
+  if (selfRes.IsInvalid() || physRes.GetT() <= selfRes.GetT()) {
+    if (actRes.IsValid()) {
+      if (TCastToPtr<CActor> act = mgr.ObjectById(damagee)) {
+        act->Touch(*this, mgr);
+        mgr.ApplyDamage(GetUniqueId(), damagee, GetOwnerId(), CDamageInfo(x12c_curDamageInfo, dt), xf8_filter,
+                        GetTransform().basis[1]);
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
 void CWaveBuster::UpdateTargetSeek(float dt, CStateManager& mgr) {
   TUniqueId uid = kInvalidUniqueId;
   SeekTarget(dt, uid, mgr);
@@ -333,8 +362,9 @@ bool CWaveBuster::UpdateBeamFrame(CStateManager& mgr, float dt) {
   float viewAngle = 0.f;
   if (const TCastToConstPtr<CActor> act = mgr.GetObjectById(x2c0_homingTargetId)) {
     const CHealthInfo* hInfo = act->GetHealthInfo(mgr);
-    if (hInfo != nullptr && hInfo->GetHP() > 0.f && (act->GetTranslation() - x2e8_originalXf.origin).magSquared() > 10000.f) {
-        return true;
+    if (hInfo != nullptr && hInfo->GetHP() > 0.f &&
+        (act->GetTranslation() - x2e8_originalXf.origin).magSquared() > 10000.f) {
+      return true;
     }
     viewAngle = GetViewAngleToTarget(local_ac, *act);
   }
@@ -378,8 +408,45 @@ float CWaveBuster::GetViewAngleToTarget(zeus::CVector3f& p1, const CActor& act) 
 
   return zeus::CVector2f::getAngleDiff(x2e8_originalXf.basis[1].toVec2f(), p1.toVec2f());
 }
-void CWaveBuster::sub_801bda14(CStateManager& mgr, TUniqueId& uid1, TUniqueId& uid2, const zeus::CVector3f& pos,
-                               const zeus::CVector3f& dir, float length) {}
+
+void CWaveBuster::sub_801bda14(CStateManager& mgr, TUniqueId& physId, TUniqueId& actId, const zeus::CVector3f& start,
+                               const zeus::CVector3f& end, float length, CRayCastResult& physRes,
+                               CRayCastResult& actorRes) {
+  const zeus::CAABox box = zeus::CAABox(-0.5f, 0.f, -0.5f, 0.5f, 25.f, 0.5f).getTransformedAABox(x2e8_originalXf);
+  rstl::reserved_vector<TUniqueId, 1024> nearList;
+  mgr.BuildNearList(nearList, box,
+                    CMaterialFilter::MakeExclude({EMaterialTypes::ProjectilePassthrough, EMaterialTypes::Player}),
+                    this);
+  if (length <= 0.f) {
+    length = 100000.f;
+  }
+
+  float prevT = length;
+  for (TUniqueId uid : nearList) {
+    if (const TCastToConstPtr<CPhysicsActor> pAct = mgr.GetObjectById(uid)) {
+      CRayCastResult res =
+          pAct->GetCollisionPrimitive()->CastRay(start, end, length, xf8_filter, pAct->GetPrimitiveTransform());
+      if (!res.IsValid() || res.GetT() >= length) {
+        continue;
+      }
+      actorRes = res;
+      actId = pAct->GetUniqueId();
+      prevT = res.GetT();
+    } else if (const TCastToConstPtr<CActor> act = mgr.GetObjectById(uid)) {
+      if (auto bounds = act->GetTouchBounds()) {
+        CCollidableAABox collidableBox{*bounds, GetMaterialList()};
+        CRayCastResult res = collidableBox.CastRay(start, end, length, xf8_filter, zeus::CTransform{});
+        if (!res.IsValid() || res.GetT() >= prevT) {
+          continue;
+        }
+        actorRes = res;
+        actId = act->GetUniqueId();
+        prevT = res.GetT();
+      }
+    }
+  }
+}
+
 CRayCastResult CWaveBuster::SeekTarget(float dt, TUniqueId& uid, CStateManager& mgr) {
   rstl::reserved_vector<TUniqueId, 1024> nearList;
   mgr.BuildNearList(nearList, GetProjectileBounds(),
