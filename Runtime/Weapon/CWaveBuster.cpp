@@ -124,8 +124,8 @@ void CWaveBuster::AddToRenderer(const zeus::CFrustum& frustum, CStateManager& mg
   EnsureRendered(mgr, x2e8_originalXf.origin, GetSortingBounds(mgr));
 }
 void CWaveBuster::Render(CStateManager& mgr) {
-  sub_801be350();
-  sub_801be5c0();
+  RenderParticles();
+  RenderBeam();
   CWeapon::Render(mgr);
 }
 
@@ -161,6 +161,7 @@ void CWaveBuster::UpdateFx(const zeus::CTransform& xf, float dt, CStateManager& 
   if (!GetActive())
     return;
 
+  x2e8_originalXf = xf;
   x398_ -= std::max(0.f, x398_ - (60.f * dt));
   x170_projectile.SetVelocity(zeus::CVector3f{0.f, x3d0_25_ ? 1.6f : 0.f, 0.f});
 }
@@ -187,7 +188,8 @@ void CWaveBuster::SetNewTarget(TUniqueId id, CStateManager& mgr) {
     mgr.GetRumbleManager().Rumble(mgr, ERumbleFxId::PlayerBump, 0.5f, ERumblePriority::Three);
   }
 }
-void CWaveBuster::sub_801be350() {
+
+void CWaveBuster::RenderParticles() {
   static constexpr std::array<zeus::CColor, 4> skCols = {{
       zeus::skWhite,
       {1.f, 0.f, 1.f, 1.f},
@@ -228,7 +230,8 @@ void CWaveBuster::sub_801be350() {
   x388_busterSwoosh2Gen->Render(GetActorLights());
   x38c_busterSparksGen->Render(GetActorLights());
 }
-void CWaveBuster::sub_801be5c0() {
+
+void CWaveBuster::RenderBeam() {
   zeus::CVector3f local_19c = x2e8_originalXf.inverse() * x2e8_originalXf.origin;
   zeus::CVector3f local_1a8 = x2e8_originalXf.inverse() * x318_;
   zeus::CVector3f local_1b4 = x2e8_originalXf.inverse() * x324_;
@@ -271,28 +274,46 @@ void CWaveBuster::sub_801be5c0() {
   g_Renderer->SetModelMatrix(x2e8_originalXf);
   m_lineRenderer1.Reset();
   for (const zeus::CVector3f& vec : linePoints) {
-    m_lineRenderer1.AddVertex(vec, zeus::skWhite, 12.f/6.f);
+    m_lineRenderer1.AddVertex(vec, zeus::skWhite, 12.f / 6.f);
   }
   m_lineRenderer1.Render();
 
   m_lineRenderer2.Reset();
   for (const zeus::CVector3f& vec : linePoints) {
-    m_lineRenderer2.AddVertex(vec, zeus::CColor{1.f, 0.f, 1.f, 0.5f}, 48.f/6);
+    m_lineRenderer2.AddVertex(vec, zeus::CColor{1.f, 0.f, 1.f, 0.5f}, 48.f / 6);
   }
   m_lineRenderer2.Render();
-
 }
 
-CRayCastResult CWaveBuster::sub_801be010(TUniqueId uid, const zeus::CVector3f& p1, const zeus::CVector3f& p2,
+CRayCastResult CWaveBuster::sub_801be010(TUniqueId uid, const zeus::CVector3f& pos, const zeus::CVector3f& dir,
                                          CStateManager& mgr) {
-  return CRayCastResult();
+  CRayCastResult res = mgr.RayStaticIntersection(pos, dir, 25.f, xf8_filter);
+  TUniqueId uid1 = kInvalidUniqueId;
+  TUniqueId uid2 = kInvalidUniqueId;
+  sub_801bda14(mgr, uid1, uid2, pos, dir, 25.f);
+  return res;
 }
-void CWaveBuster::UpdateTargetSeek(float dt, CStateManager& mgr) {}
+void CWaveBuster::UpdateTargetSeek(float dt, CStateManager& mgr) {
+  TUniqueId uid = kInvalidUniqueId;
+  SeekTarget(dt, uid, mgr);
+  if (x2c0_homingTargetId == kInvalidUniqueId && !x3d0_26_ &&
+      (GetTranslation() - x2e8_originalXf.origin).magSquared() > 625.f) {
+    x3d0_25_ = false;
+  } else if (const TCastToConstPtr<CActor> act = mgr.GetObjectById(x2c0_homingTargetId)) {
+    zeus::CVector3f vec = zeus::skForward;
+    if (GetViewAngleToTarget(vec, *act) <= zeus::degToRad(90.f) && x3d0_26_) {
+      x3d0_25_ = false;
+    } else {
+      x2c0_homingTargetId = kInvalidUniqueId;
+      x3d0_26_ = false;
+    }
+  }
+}
 
 void CWaveBuster::UpdateTargetDamage(float dt, CStateManager& mgr) {
   if (const TCastToConstPtr<CActor> act = mgr.GetObjectById(x2c0_homingTargetId)) {
     const CHealthInfo* hInfo = act->GetHealthInfo(mgr);
-    if (hInfo && hInfo->GetHP() > 0.f) {
+    if (hInfo != nullptr && hInfo->GetHP() > 0.f) {
       x33c_ = act->GetAimPosition(mgr, 0.f);
       SetTranslation(x33c_);
       mgr.ApplyDamage(GetUniqueId(), x2c0_homingTargetId, GetOwnerId(), CDamageInfo(x12c_curDamageInfo, dt), xf8_filter,
@@ -312,8 +333,7 @@ bool CWaveBuster::UpdateBeamFrame(CStateManager& mgr, float dt) {
   float viewAngle = 0.f;
   if (const TCastToConstPtr<CActor> act = mgr.GetObjectById(x2c0_homingTargetId)) {
     const CHealthInfo* hInfo = act->GetHealthInfo(mgr);
-    if (hInfo && hInfo->GetHP() > 0.f) {
-      if ((act->GetTranslation() - x2e8_originalXf.origin).magnitude() > 10000.f)
+    if (hInfo != nullptr && hInfo->GetHP() > 0.f && (act->GetTranslation() - x2e8_originalXf.origin).magSquared() > 10000.f) {
         return true;
     }
     viewAngle = GetViewAngleToTarget(local_ac, *act);
@@ -357,6 +377,30 @@ float CWaveBuster::GetViewAngleToTarget(zeus::CVector3f& p1, const CActor& act) 
   }
 
   return zeus::CVector2f::getAngleDiff(x2e8_originalXf.basis[1].toVec2f(), p1.toVec2f());
+}
+void CWaveBuster::sub_801bda14(CStateManager& mgr, TUniqueId& uid1, TUniqueId& uid2, const zeus::CVector3f& pos,
+                               const zeus::CVector3f& dir, float length) {}
+CRayCastResult CWaveBuster::SeekTarget(float dt, TUniqueId& uid, CStateManager& mgr) {
+  rstl::reserved_vector<TUniqueId, 1024> nearList;
+  mgr.BuildNearList(nearList, GetProjectileBounds(),
+                    CMaterialFilter::MakeIncludeExclude(
+                        {EMaterialTypes::Solid}, {EMaterialTypes::ProjectilePassthrough, EMaterialTypes::Player}),
+                    this);
+  CRayCastResult res = RayCollisionCheckWithWorld(uid, x298_previousPos, GetTranslation(),
+                                                  (GetTranslation() - x298_previousPos).magnitude(), nearList, mgr);
+  if (res.IsInvalid()) {
+    UpdateProjectileMovement(dt, mgr);
+  } else {
+    x3d0_25_ = false;
+    if (uid == kInvalidUniqueId || uid != x2c0_homingTargetId) {
+      x2c0_homingTargetId = kInvalidUniqueId;
+    } else {
+      x3d0_26_ = true;
+      CSfxManager::AddEmitter(SFXsfx06FF, res.GetPoint(), zeus::skZero3f, true, false, 255, kInvalidAreaId);
+    }
+  }
+
+  return res;
 }
 
 } // namespace metaforce

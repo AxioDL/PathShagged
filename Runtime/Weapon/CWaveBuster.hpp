@@ -27,7 +27,7 @@ class CWaveBuster : public CGameProjectile {
   std::unique_ptr<CElementGen> x38c_busterSparksGen;
   std::unique_ptr<CElementGen> x390_busterLightGen;
   CRandom16 x394_rand{99};
-  float x398_ = 2.f*M_PIF;
+  float x398_ = 2.f * M_PIF;
   float x39c_ = 0.5f;
   float x3a0_ = 0.5f;
   float x3a4_ = 0.f;
@@ -49,13 +49,18 @@ class CWaveBuster : public CGameProjectile {
   CLineRenderer m_lineRenderer1;
   CLineRenderer m_lineRenderer2;
 
-  void sub_801be350();
-  void sub_801be5c0();
-  CRayCastResult sub_801be010(TUniqueId uid, const zeus::CVector3f& p1, const zeus::CVector3f& p2, CStateManager& mgr);
+  void RenderParticles();
+  void RenderBeam();
+  CRayCastResult sub_801be010(TUniqueId uid, const zeus::CVector3f& pos, const zeus::CVector3f& dir,
+                              CStateManager& mgr);
   void UpdateTargetSeek(float dt, CStateManager& mgr);
   void UpdateTargetDamage(float dt, CStateManager& mgr);
   bool UpdateBeamFrame(CStateManager& mgr, float dt);
   float GetViewAngleToTarget(zeus::CVector3f& p1, const CActor& act);
+  void sub_801bda14(CStateManager& mgr, TUniqueId& uid1, TUniqueId& uid2, const zeus::CVector3f& pos, const zeus::CVector3f& dir,
+                    float length);
+  CRayCastResult SeekTarget(float dt, TUniqueId& uid, CStateManager& mgr);
+
 public:
   CWaveBuster(const TToken<CWeaponDescription>& desc, EWeaponType type, const zeus::CTransform& xf,
               EMaterialTypes matType, const CDamageInfo& dInfo, TUniqueId uid, TAreaId aid, TUniqueId owner,
