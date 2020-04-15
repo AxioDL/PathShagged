@@ -57,7 +57,7 @@ void CWaveBuster::Think(float dt, CStateManager& mgr) {
   float dVar17 = 0.f;
   if (!x3d0_25_ && !x3d0_26_) {
     TUniqueId uid = kInvalidUniqueId;
-    CRayCastResult res = sub_801be010(uid, local_160, local_16c, mgr, dt);
+    CRayCastResult res = SeekDamageTarget(uid, local_160, local_16c, mgr, dt);
     if (res.IsValid() && res.GetT() < 25.f) {
       if (TCastToPtr<CActor> act = mgr.ObjectById(uid)) {
         act->Touch(*this, mgr);
@@ -287,19 +287,21 @@ void CWaveBuster::RenderBeam() {
   m_lineRenderer2.Render();
 }
 
-CRayCastResult CWaveBuster::sub_801be010(TUniqueId uid, const zeus::CVector3f& pos, const zeus::CVector3f& dir,
+CRayCastResult CWaveBuster::SeekDamageTarget(TUniqueId& uid, const zeus::CVector3f& pos, const zeus::CVector3f& dir,
                                          CStateManager& mgr, float dt) {
   CRayCastResult res = mgr.RayStaticIntersection(pos, dir, 25.f, xf8_filter);
   TUniqueId physId = kInvalidUniqueId;
   TUniqueId actId = kInvalidUniqueId;
   CRayCastResult physRes;
   CRayCastResult actRes;
-  sub_801bda14(mgr, physId, actId, pos, dir, 25.f, physRes, actRes);
+  RayCastTarget(mgr, physId, actId, pos, dir, 25.f, physRes, actRes);
   if (actRes.IsValid() && ApplyDamageToTarget(physId, actRes, physRes, res, mgr, dt)) {
+    uid = actId;
     return actRes;
   }
 
   if (physRes.IsValid() && ApplyDamageToTarget(actId, actRes, physRes, res, mgr, dt)) {
+    uid = physId;
     return physRes;
   }
 
@@ -409,7 +411,7 @@ float CWaveBuster::GetViewAngleToTarget(zeus::CVector3f& p1, const CActor& act) 
   return zeus::CVector2f::getAngleDiff(x2e8_originalXf.basis[1].toVec2f(), p1.toVec2f());
 }
 
-void CWaveBuster::sub_801bda14(CStateManager& mgr, TUniqueId& physId, TUniqueId& actId, const zeus::CVector3f& start,
+void CWaveBuster::RayCastTarget(CStateManager& mgr, TUniqueId& physId, TUniqueId& actId, const zeus::CVector3f& start,
                                const zeus::CVector3f& end, float length, CRayCastResult& physRes,
                                CRayCastResult& actorRes) {
   const zeus::CAABox box = zeus::CAABox(-0.5f, 0.f, -0.5f, 0.5f, 25.f, 0.5f).getTransformedAABox(x2e8_originalXf);
