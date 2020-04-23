@@ -17,10 +17,10 @@ namespace metaforce {
 CWaveBuster::CWaveBuster(const TToken<CWeaponDescription>& desc, EWeaponType type, const zeus::CTransform& xf,
                          EMaterialTypes matType, const CDamageInfo& dInfo, TUniqueId uid, TAreaId aid, TUniqueId owner,
                          TUniqueId homingTarget, EProjectileAttrib attrib)
-: CGameProjectile(true, desc, "WaveBuster", type, xf, matType, dInfo, uid, aid, owner, homingTarget, attrib, false,
+: CGameProjectile(true, desc, "WaveBuster"sv, type, xf, matType, dInfo, uid, aid, owner, homingTarget, attrib, false,
                   zeus::skOne3f, {}, -1, false)
 , x2e8_originalXf(xf)
-, x348_targetPoint(x2e8_originalXf.basis[1].normalized() * 25.f + x2e8_originalXf.origin)
+, x348_targetPoint(x2e8_originalXf.frontVector().normalized() * 25.f + x2e8_originalXf.origin)
 , x354_busterSwoosh1(g_SimplePool->GetObj("BusterSwoosh1"))
 , x360_busterSwoosh2(g_SimplePool->GetObj("BusterSwoosh2"))
 , x36c_busterSparks(g_SimplePool->GetObj("BusterSparks"))
@@ -51,7 +51,7 @@ void CWaveBuster::Think(float dt, CStateManager& mgr) {
   x3d0_27_ = false;
   x3d0_28_ = false;
   zeus::CVector3f local_160 = x2e8_originalXf.origin;
-  zeus::CVector3f local_184 = x2e8_originalXf.basis[1];
+  zeus::CVector3f local_184 = x2e8_originalXf.frontVector();
   zeus::CVector3f local_16c = local_184.normalized();
 
   float dVar17 = 0.f;
@@ -124,6 +124,7 @@ void CWaveBuster::Think(float dt, CStateManager& mgr) {
 void CWaveBuster::AddToRenderer(const zeus::CFrustum& frustum, CStateManager& mgr) {
   EnsureRendered(mgr, x2e8_originalXf.origin, GetSortingBounds(mgr));
 }
+
 void CWaveBuster::Render(CStateManager& mgr) {
   RenderParticles();
   RenderBeam();
@@ -234,44 +235,31 @@ void CWaveBuster::RenderParticles() {
 }
 
 void CWaveBuster::RenderBeam() {
-  zeus::CVector3f local_19c = x2e8_originalXf.inverse() * x2e8_originalXf.origin;
-  zeus::CVector3f local_1a8 = x2e8_originalXf.inverse() * x318_;
-  zeus::CVector3f local_1b4 = x2e8_originalXf.inverse() * x324_;
-  zeus::CVector3f local_1c0 = x2e8_originalXf.inverse() * GetTranslation();
-  float dVar13 = 0.f;
+  const zeus::CTransform inv = x2e8_originalXf.inverse();
+  const zeus::CVector3f vecA = inv * x2e8_originalXf.origin;
+  const zeus::CVector3f vecB = inv * x318_;
+  const zeus::CVector3f vecC = inv * x324_;
+  const zeus::CVector3f vecD = inv * GetTranslation();
+  float variation = 0.f;
   rstl::reserved_vector<zeus::CVector3f, 36> linePoints; // Used to be L2Cache access
   linePoints.resize(36);
-  float dVar12 = 0.16;
-  float dVar21 = 1.f;
-  float dVar22 = 2.f * M_PIF;
-  float dVar17 = local_19c.z();
-  float dVar18 = local_19c.y();
-  float dVar19 = local_19c.x();
-  while (dVar12 <= dVar21) {
-    zeus::CVector3f local_214 = zeus::getBezierPoint(local_19c, local_1a8, local_1b4, local_1c0, dVar12);
-    float dVar16 = local_214.x();
-    float dVar15 = local_214.y();
-    float dVar14 = local_214.z();
-
-    float fVar1 = 0.f;
+  float t = 0.16;
+  zeus::CVector3f lastPoint = vecA;
+  while (t <= 1.f) {
+    const zeus::CVector3f point = zeus::getBezierPoint(vecA, vecB, vecC, vecD, t);
+    float angle = 0.f;
     for (size_t i = 0; i < 36; ++i) {
-      float dVar5 = x394_rand.Range(-0.041667f, 0.041667f);
-      float dVar20 = x394_rand.Range(-0.041667f, 0.041667f);
-      float dVar6 = std::cos(fVar1 + x398_);
-      float dVar9 = dVar13 * dVar6 + dVar5;
-      dVar6 = std::sin(fVar1 + x398_);
-      dVar5 = fVar1 / dVar22;
-      float dVar7 = dVar21 - dVar5;
-      fVar1 += 0.17453294f;
-      linePoints[i] =
-          zeus::CVector3f{dVar19 * dVar7 + (dVar16 * dVar5) + dVar9, dVar18 * dVar7 + (dVar15 * dVar5) + dVar9,
-                          dVar17 * dVar7 + (dVar14 * dVar5) + (dVar13 * dVar6 + dVar20)};
+      const float randX = x394_rand.Range(-0.041667f, 0.041667f);
+      const float randZ = x394_rand.Range(-0.041667f, 0.041667f);
+      const float offX = variation * std::cos(angle + x398_) + randX;
+      const float offZ = variation * std::sin(angle + x398_) + randZ;
+      const float d = angle / (2.f * M_PIF);
+      linePoints[i] = lastPoint * (1.f - d) + point * d + zeus::CVector3f{offX, 0.f, offZ};
+      angle += zeus::degToRad(10.f);
     }
-    dVar13 = 0.25f;
-    dVar12 += 0.16;
-    dVar17 = dVar14;
-    dVar18 = dVar15;
-    dVar19 = dVar16;
+    variation = 0.25f;
+    t += 0.16;
+    lastPoint = point;
   }
   g_Renderer->SetModelMatrix(x2e8_originalXf);
   m_lineRenderer1.Reset();
@@ -288,7 +276,7 @@ void CWaveBuster::RenderBeam() {
 }
 
 CRayCastResult CWaveBuster::SeekDamageTarget(TUniqueId& uid, const zeus::CVector3f& pos, const zeus::CVector3f& dir,
-                                         CStateManager& mgr, float dt) {
+                                             CStateManager& mgr, float dt) {
   CRayCastResult res = mgr.RayStaticIntersection(pos, dir, 25.f, xf8_filter);
   TUniqueId physId = kInvalidUniqueId;
   TUniqueId actId = kInvalidUniqueId;
@@ -309,7 +297,7 @@ CRayCastResult CWaveBuster::SeekDamageTarget(TUniqueId& uid, const zeus::CVector
 }
 
 bool CWaveBuster::ApplyDamageToTarget(TUniqueId damagee, const CRayCastResult& actRes, const CRayCastResult& physRes,
-                               const CRayCastResult& selfRes, CStateManager& mgr, float dt) {
+                                      const CRayCastResult& selfRes, CStateManager& mgr, float dt) {
 
   if (selfRes.IsInvalid() || physRes.GetT() <= selfRes.GetT()) {
     if (actRes.IsValid()) {
@@ -408,12 +396,12 @@ float CWaveBuster::GetViewAngleToTarget(zeus::CVector3f& p1, const CActor& act) 
     p1.normalize();
   }
 
-  return zeus::CVector2f::getAngleDiff(x2e8_originalXf.basis[1].toVec2f(), p1.toVec2f());
+  return zeus::CVector2f::getAngleDiff(x2e8_originalXf.frontVector().toVec2f(), p1.toVec2f());
 }
 
 void CWaveBuster::RayCastTarget(CStateManager& mgr, TUniqueId& physId, TUniqueId& actId, const zeus::CVector3f& start,
-                               const zeus::CVector3f& end, float length, CRayCastResult& physRes,
-                               CRayCastResult& actorRes) {
+                                const zeus::CVector3f& end, float length, CRayCastResult& physRes,
+                                CRayCastResult& actorRes) {
   const zeus::CAABox box = zeus::CAABox(-0.5f, 0.f, -0.5f, 0.5f, 25.f, 0.5f).getTransformedAABox(x2e8_originalXf);
   rstl::reserved_vector<TUniqueId, 1024> nearList;
   mgr.BuildNearList(nearList, box,
