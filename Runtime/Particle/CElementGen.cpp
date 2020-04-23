@@ -1782,7 +1782,7 @@ void CElementGen::RenderParticlesIndirectTexture() {
 
 void CElementGen::SetOrientation(const zeus::CTransform& orientation) {
   x1d8_orientation = orientation;
-  x208_orientationInverse = x1d8_orientation.inverse().basis;
+  x208_orientationInverse = x1d8_orientation.basis.transposed();
 
   for (const std::unique_ptr<CParticleGen>& ch : x290_activePartChildren)
     ch->SetOrientation(orientation);
