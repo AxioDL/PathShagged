@@ -7,24 +7,29 @@
 #include "Runtime/RetroTypes.hpp"
 
 namespace metaforce {
-class CGameAllocator {
-  struct SAllocationDescription {
-    std::unique_ptr<u8[]> memptr;
-    size_t allocSize = 0;
-    ptrdiff_t freeOffset = 0;
-  };
-
-  struct SChunkDescription {
-    u32 magic = 0xE8E8E8E8;
-    SAllocationDescription* parent;
-    size_t len = 0;
-    u32 sentinal = 0xEFEFEFEF;
-  };
-
-  static std::vector<SAllocationDescription> m_allocations;
-
+class CCallStack {
+  const char* x0_line;
+  const char* x4_type;
 public:
-  static u8* Alloc(size_t len);
-  static void Free(u8* ptr);
+  CCallStack(int lineNum, const char* lineStr, const char* type) : x0_line(lineStr), x4_type(type) {}
+};
+
+class CGameAllocator {
+  struct SGameMemInfo {
+    u32 x0_sentinel = 0xefefefef;
+    size_t x4_len = 0;
+    const char* x8_line;
+    const char* xc_type;
+    SGameMemInfo* x10_prev = nullptr;
+    void* x14_ = nullptr;
+    void* x18_ = nullptr;
+    u32 x1c_canary = 0xeaeaeaea;
+  };
+  static u32 GetFreeBinEntryForSize(size_t len);
+  std::array<SGameMemInfo, 16> x14_bins;
+public:
+
+  bool Initialize();//const COsContext& ctx);
 };
 } // namespace metaforce
+

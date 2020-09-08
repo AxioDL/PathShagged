@@ -1,57 +1,26 @@
 #include "Runtime/CGameAllocator.hpp"
+#include <new>
 
 namespace metaforce {
 logvisor::Module AllocLog("metaforce::CGameAllocator");
 
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 
-std::vector<CGameAllocator::SAllocationDescription> CGameAllocator::m_allocations;
-
-u8* CGameAllocator::Alloc(size_t len) {
-  size_t roundedLen = ROUND_UP_64(len + sizeof(SChunkDescription));
-  for (SAllocationDescription& alloc : m_allocations) {
-    /* We need to supply enough room for allocation information */
-    if (alloc.freeOffset + roundedLen < alloc.allocSize) {
-      u8* ptr = alloc.memptr.get() + alloc.freeOffset;
-      SChunkDescription* chunkInfo = reinterpret_cast<SChunkDescription*>(ptr);
-      *chunkInfo = SChunkDescription();
-      chunkInfo->parent = &alloc;
-      chunkInfo->len = len;
-      alloc.freeOffset += roundedLen;
-      return ptr + sizeof(SChunkDescription);
+u32 CGameAllocator::GetFreeBinEntryForSize(size_t len) {
+  size_t bin = 0;
+  size_t binSize = 32;
+  while (true) {
+    if (binSize > 0x200000) {
+      return 15;
     }
+    if (len < binSize) {
+      break;
+    }
+    binSize <<= 1;
+    ++bin;
   }
-
-  /* 1MiB minimum allocation to prevent constantly allocating small amounts of memory */
-  size_t allocSz = len;
-  if (allocSz < (1 * 1024 * 1024 * 1024))
-    allocSz = 1 * 1024 * 1024 * 1024;
-
-  /* Pad size to allow for allocation information */
-  allocSz = ROUND_UP_64(allocSz + sizeof(SChunkDescription));
-  auto& alloc = m_allocations.emplace_back();
-  alloc.memptr.reset(new u8[allocSz]);
-  u8* ptr = alloc.memptr.get();
-  alloc.allocSize = allocSz;
-  alloc.freeOffset += roundedLen;
-  SChunkDescription* chunkInfo = reinterpret_cast<SChunkDescription*>(ptr);
-  *chunkInfo = SChunkDescription();
-  chunkInfo->parent = &alloc;
-  chunkInfo->len = len;
-  return ptr + sizeof(SChunkDescription);
+  return bin;
 }
 
-void CGameAllocator::Free(u8* ptr) {
-  SChunkDescription* info = reinterpret_cast<SChunkDescription*>(ptr - sizeof(SChunkDescription));
-  if (info->magic != 0xE8E8E8E8 || info->sentinal != 0xEFEFEFEF) {
-    AllocLog.report(logvisor::Fatal, FMT_STRING(_SYS_STR("Invalid chunk description, memory corruption!")));
-    return;
-  }
-
-  SAllocationDescription& alloc = *info->parent;
-  size_t roundedLen = ROUND_UP_32(info->len + sizeof(SChunkDescription));
-  alloc.freeOffset -= roundedLen;
-  /* Invalidate chunk allocation descriptor */
-  memset(info, 0, ROUND_UP_64(info->len + sizeof(SChunkDescription)));
-}
+bool CGameAllocator::Initialize() { return true; }
 } // namespace metaforce
