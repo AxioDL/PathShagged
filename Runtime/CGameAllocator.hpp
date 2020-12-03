@@ -64,7 +64,18 @@ class CGameAllocator : public IAllocator {
   std::array<SGameMemInfo*, 16> x14_bins;
 
 public:
-  bool Initialize(); // const COsContext& ctx);
+  bool Initialize() override; // const COsContext& ctx);
+  void* Alloc() override;
+  s32 Free(void* ptr) override;
+  void ReleaseAll() override;
+  void AllocSecondary() override;
+  void FreeSecondary() override;
+  void ReleaseAllSecondary() override;
+  void SetOutOfMemoryCallback() override;
+  void EnumAllocations() override;
+  SAllocInfo GetAllocInfo() override;
+  void sub80351138() override;
+  void GetMetrics() override;
 };
 } // namespace metaforce
 

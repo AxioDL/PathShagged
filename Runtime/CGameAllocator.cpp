@@ -23,4 +23,16 @@ u32 CGameAllocator::GetFreeBinEntryForSize(size_t len) {
 }
 
 bool CGameAllocator::Initialize() { return true; }
+
+void* CGameAllocator::Alloc() { return nullptr; }
+s32 CGameAllocator::Free(void* ptr) { return 0; }
+void CGameAllocator::ReleaseAll() {}
+void CGameAllocator::AllocSecondary() {}
+void CGameAllocator::FreeSecondary() {}
+void CGameAllocator::ReleaseAllSecondary() {}
+void CGameAllocator::SetOutOfMemoryCallback() {}
+void CGameAllocator::EnumAllocations() {}
+SAllocInfo CGameAllocator::GetAllocInfo() { return SAllocInfo(); }
+void CGameAllocator::sub80351138() {}
+void CGameAllocator::GetMetrics() {}
 } // namespace metaforce
