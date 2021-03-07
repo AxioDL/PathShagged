@@ -168,6 +168,7 @@ public:
                                                 const CMaterialList& matList, const zeus::CVector3f& dir, float mag,
                                                 CCollisionInfo& infoOut, double& dOut);
   static void ResetInternalCounters();
+  static std::array<u16, 0x4000> GetTriangleList() { return g_DupTriangleList; }
 };
 
 class CAreaCollisionCache {
