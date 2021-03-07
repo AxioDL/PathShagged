@@ -242,11 +242,11 @@ void CIceImpact::GenerateParticlesAgainstWorld(CStateManager& mgr,
   for (auto const& node : leaf_cache) {
     CAreaOctTree::TriListReference arr = node.GetTriangleArray();
     bool subdivide_result = false;
-    for (int i = 0; i < static_cast<u32>(arr.GetAt(0)) && !subdivide_result; i++) {
-      u16 v1 = arr.GetAt(i + 1) << 1;
-      if (triangle_list[v1] != 0x6438) {
-        triangle_list[v1] = 0x6438;
-        CCollisionSurface surface = node.GetOwner().GetMasterListTriangle(arr.GetAt(i + 1));
+    for (int i = 0; i < arr.GetSize() && !subdivide_result; i++) {
+      u16 v1 = arr.GetAt(i);
+      if (triangle_list[v1] != CMetroidAreaCollider::GetPrimitiveCheckCount()) {
+        triangle_list[v1] = CMetroidAreaCollider::GetPrimitiveCheckCount();
+        CCollisionSurface surface = node.GetOwner().GetMasterListTriangle(arr.GetAt(i));
         if (filter.Passes(CMaterialList(surface.GetSurfaceFlags()))) {
           subdivide_result =
               SubdivideAndGenerateParticles(mgr, surface.GetVert(0), surface.GetVert(1), surface.GetVert(1), a, b);
