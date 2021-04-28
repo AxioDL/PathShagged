@@ -275,9 +275,9 @@ def recursive_cook(buffer, obj, version, path_hasher, parent_name):
 
 def cook(writepipebuf, version, path_hasher):
     global hjustifications, vjustifications, model_draw_flags_e
-    hjustifications = dict((i[0], i[3]) for i in bpy.types.Object.retro_textpane_hjustification[1]['items'])
-    vjustifications = dict((i[0], i[3]) for i in bpy.types.Object.retro_textpane_vjustification[1]['items'])
-    model_draw_flags_e = dict((i[0], i[3]) for i in bpy.types.Object.retro_widget_model_draw_flags[1]['items'])
+    hjustifications = dict((i[0], i[3]) for i in bpy.types.Object.retro_textpane_hjustification.keywords['items'])
+    vjustifications = dict((i[0], i[3]) for i in bpy.types.Object.retro_textpane_vjustification.keywords['items'])
+    model_draw_flags_e = dict((i[0], i[3]) for i in bpy.types.Object.retro_widget_model_draw_flags.keywords['items'])
 
     buffer = bytearray()
     buffer += struct.pack('>IIII', 0, 0, 0, 0)

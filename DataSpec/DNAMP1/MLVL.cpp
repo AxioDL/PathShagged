@@ -157,8 +157,8 @@ bool MLVL::Cook(const hecl::ProjectPath& outPath, const hecl::ProjectPath& inPat
     bool areaInit = false;
     size_t layerIdx = 0;
     LayerResources layerResources;
-    for (const hecl::DirectoryEnumerator::Entry& e :
-         hecl::DirectoryEnumerator(area.path.getAbsolutePath(), hecl::DirectoryEnumerator::Mode::DirsSorted)) {
+    const hecl::DirectoryEnumerator enumerator(area.path.getAbsolutePath(), hecl::DirectoryEnumerator::Mode::DirsSorted);
+    for (const hecl::DirectoryEnumerator::Entry& e : enumerator) {
       hecl::SystemString layerName;
       hecl::SystemChar* endCh = nullptr;
       hecl::StrToUl(e.m_name.c_str(), &endCh, 10);
