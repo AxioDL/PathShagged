@@ -79,7 +79,7 @@ private:
   zeus::CTransform x178_localScaleTransform = zeus::CTransform();
   zeus::CTransform x1a8_localScaleTransformInverse = zeus::CTransform();
   zeus::CTransform x1d8_orientation = zeus::CTransform();
-  zeus::CTransform x208_orientationInverse = zeus::CTransform();
+  zeus::CMatrix3f x208_orientationInverse = zeus::CMatrix3f();
   zeus::CTransform x22c_globalOrientation = zeus::CTransform();
 
   u32 x25c_activeParticleCount = 0;

@@ -92,5 +92,6 @@ public:
   zeus::CAABox CalculateLocalAABox() const;
   zeus::CAABox CalculateAABox(const zeus::CTransform&) const;
   const CNode& GetRoot() const { return *x88_root; }
+  u32 NumSurfaceMaterials() const { return x18_indexData.x30_surfaceMaterials.size(); }
 };
 } // namespace metaforce

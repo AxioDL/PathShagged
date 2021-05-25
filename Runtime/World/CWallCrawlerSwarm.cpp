@@ -15,6 +15,7 @@
 #include "Runtime/Graphics/CVertexMorphEffect.hpp"
 #include "Runtime/Weapon/CGameProjectile.hpp"
 #include "Runtime/World/CActorParameters.hpp"
+#include "Runtime/World/CMarkerGrid.hpp"
 #include "Runtime/World/CPhysicsActor.hpp"
 #include "Runtime/World/CPlayer.hpp"
 #include "Runtime/World/CScriptDoor.hpp"
@@ -1243,4 +1244,18 @@ void CWallCrawlerSwarm::ApplyRadiusDamage(const zeus::CVector3f& pos, const CDam
   }
 }
 
+void CWallCrawlerSwarm::FreezeCollision(CMarkerGrid const &grid) {
+  for (CBoid &boid : x108_boids) {
+    if (!boid.x80_24_active) {
+      continue;
+    }
+    const float rad_sq_1 = x378_touchRadius * x378_touchRadius + 0.3f;
+    const float rad_sq_2 = x378_touchRadius * x378_touchRadius + 0.5f;
+    const zeus::CVector3f half_bounds(rad_sq_1, rad_sq_1, rad_sq_2);
+    zeus::CAABox coll_bounds(boid.x0_xf.origin - half_bounds, boid.x0_xf.origin + half_bounds);
+    if (grid.AABoxTouchesData(coll_bounds, 1)) {
+      boid.x48_timeToDie = 1.f;
+    }
+  }
+}
 } // namespace metaforce

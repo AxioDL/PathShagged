@@ -21,6 +21,7 @@ class CCollidableOBBTreeGroupContainer {
 public:
   explicit CCollidableOBBTreeGroupContainer(CInputStream& in);
   CCollidableOBBTreeGroupContainer(const zeus::CVector3f&, const zeus::CVector3f&);
+  u32 NumTrees() const { return x0_trees.size(); }
 };
 
 class CCollidableOBBTreeGroup : public CCollisionPrimitive {
@@ -37,6 +38,8 @@ public:
   zeus::CAABox CalculateLocalAABox() const override;
   FourCC GetPrimType() const override;
   CRayCastResult CastRayInternal(const CInternalRayCastStructure&) const override;
+  COBBTree const* GetOBBTreeAABox(int index) const { return x10_container->x0_trees[index].get(); }
+  CCollidableOBBTreeGroupContainer const* GetContainer() const { return x10_container; }
 
   static const Type& GetType();
   static void SetStaticTableIndex(u32 index);

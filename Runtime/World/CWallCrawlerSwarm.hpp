@@ -19,6 +19,7 @@
 
 namespace metaforce {
 class CAreaCollisionCache;
+class CMarkerGrid;
 class CWallCrawlerSwarm : public CActor {
 public:
   enum class EFlavor {
@@ -201,5 +202,6 @@ public:
   int GetCurrentLockOnId() const { return x42c_lockOnIdx; }
   bool GetLockOnLocationValid(int id) const { return id >= 0 && id < x108_boids.size() && x108_boids[id].GetActive(); }
   const zeus::CVector3f& GetLockOnLocation(int id) const { return x108_boids[id].GetTranslation(); }
+  void FreezeCollision(const CMarkerGrid& grid);
 };
 } // namespace metaforce

@@ -127,6 +127,7 @@ public:
                  EKnockBackType type, float magnitude);
   void SetSeverity(pas::ESeverity v) { x7c_severity = v; }
   void SetEnableFreeze(bool b) { x81_25_enableFreeze = b; }
+  bool GetEnableFreeze() const { return x81_25_enableFreeze; }
   void SetEnableShock(bool b) { x81_26_enableShock = b; }
   void SetEnableBurn(bool b) { x81_27_enableBurn = b; }
   void SetEnableBurnDeath(bool b) { x81_28_enableBurnDeath = b; }
