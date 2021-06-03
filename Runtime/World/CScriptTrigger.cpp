@@ -32,7 +32,7 @@ CScriptTrigger::CScriptTrigger(TUniqueId uid, std::string_view name, const CEnti
   if (GetEditorId() == 0x0034004B) {
     Log.report(logvisor::Warning, FMT_STRING("BUG THIS!: Overriding forceField.x() for trigger {} in area {}"),
                GetEditorId(), GetAreaIdAlways());
-    x11c_forceField.x() = 0.f;
+    //x11c_forceField.x() = 0.f;
   }
 #endif
 }
