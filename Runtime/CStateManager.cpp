@@ -2907,4 +2907,19 @@ const CGameArea* CStateManager::GetCurrentArea() const {
   }
   return nullptr;
 };
+
+#ifdef PRIME2
+
+int CStateManager::MaskUIdNumPlayers(TUniqueId uid) const {
+  // Give a TUniqueId of a CPlayer object, returns the player index
+  u16 uVar1 = uid.Value();
+  if (uVar1 < numPlayers) {
+    return uVar1;
+  } else {
+    return 0;
+  }
+}
+
+#endif
+
 } // namespace metaforce

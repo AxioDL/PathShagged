@@ -82,6 +82,9 @@ if(APPLE AND NOT CMAKE_OSX_SYSROOT)
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif()
 
+set(METAFORCE_TARGET_GAME "PRIME1" CACHE STRING "The game Metaforce will replicate")
+set_property(CACHE METAFORCE_TARGET_GAME PROPERTY STRINGS PRIME1 PRIME2)
+
 option(METAFORCE_CROSSCOMPILING "Don't build tools; attempt package import" OFF)
 if (METAFORCE_CROSSCOMPILING)
   set(CMAKE_CROSSCOMPILING On)
@@ -359,6 +362,12 @@ endif()
 if (NOT WIN32)
   find_package(ZLIB REQUIRED)
   set(ZLIB_LIBRARIES ZLIB::ZLIB CACHE STRING "zlib libraries" FORCE)
+endif()
+
+if("${METAFORCE_TARGET_GAME}" STREQUAL "PRIME1")
+    add_definitions(-DPRIME1)
+elseif("${METAFORCE_TARGET_GAME}" STREQUAL "PRIME2")
+    add_definitions(-DPRIME2)
 endif()
 
 add_subdirectory(extern/nod)

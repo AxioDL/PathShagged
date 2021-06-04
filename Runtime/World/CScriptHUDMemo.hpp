@@ -16,9 +16,17 @@ public:
     StatusMessage,
     MessageBox,
   };
+  // Prime: x34; Echoes: x24
   CHUDMemoParms x34_parms;
+#ifdef PRIME2
+  // Echoes: x30
+  bool useOriginator;
+#endif
+  // Prime: x3c; Echoes: x34
   EDisplayType x3c_dispType;
+  // Prime: x40; Echoes: x38
   CAssetId x40_stringTableId;
+  // Prime: x44; Echoes: x3c
   std::optional<TLockedToken<CStringTable>> x44_stringTable;
 
 private:

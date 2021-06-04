@@ -59,6 +59,118 @@ public:
     Spirit = 39,
     Newborn = 40,
 
+    #ifdef PRIME2
+    //PowerBeam,
+    DarkBeam,
+    LightBeam,
+    AnnihilatorBeam,
+    //SuperMissile,
+    Darkburst,
+    Sunburst,
+    SonicBoom,
+    //CombatVisor,
+    //ScanVisor,
+    DarkVisor,
+    EchoVisor,
+    //VariaSuit,
+    DarkSuit,
+    LightSuit,
+    //MorphBall,
+    //BoostBall,
+    //SpiderBall,
+    //MorphBallBombs,
+    Unknown01,
+    Unknown02,
+    Unknown03,
+    //ChargeBeam,
+    //GrappleBeam,
+    //SpaceJumpBoots,
+    GravityBoost,
+    SeekerLauncher,
+    ScrewAttack,
+    Unknown04,
+    TempleKey1,
+    TempleKey2,
+    TempleKey3,
+    AgonKey1,
+    AgonKey2,
+    AgonKey3,
+    TorvusKey1,
+    TorvusKey2,
+    TorvusKey3,
+    HiveKey1,
+    HiveKey2,
+    HiveKey3,
+    //HealthRefill,
+    //EnergyTank,
+    //Powerbomb,
+    //Missile,
+    DarkAmmo,
+    LightAmmo,
+    ItemPercentage,
+    Unknown_48,
+    Unknown_49,
+    Unknown_50,
+    Unknown_51,
+    Unknown_52,
+    Unknown_53,
+    Unknown_54,
+    Unknown_55,
+    Unknown_56,
+    Invisibility,
+    DoubleDamage,
+    Invincibility,
+    Unknown_60,
+    Unknown_61,
+    Unknown_62,
+    Unknown_63,
+    Unknown_64,
+    Unknown_65,
+    Unknown_66,
+    Unknown_67,
+    Unknown_68,
+    Unknown_69,
+    Unknown_70,
+    Unused1,
+    Unused2,
+    Unused3,
+    Unused4,
+    Unknown_76,
+    Unknown_77,
+    Unknown_78,
+    Unknown_79,
+    Unknown_80,
+    Unknown_81,
+    UnlimitedMissiles,
+    UnlimitedBeamAmmo,
+    DarkShield,
+    LightShield,
+    AbsorbAttack,
+    DeathBall,
+    ScanVirus,
+    Unknown_88,
+    DisableBeamAmmo,
+    DisableMissiles,
+    Unknown_91,
+    DisableBall,
+    DisableSpaceJump,
+    Unknown_94,
+    HackedEffect,
+    CannonBall,
+    VioletTranslator,
+    AmberTranslator,
+    EmeraldTranslator,
+    CobaltTranslator,
+    TempleKey4,
+    TempleKey5,
+    TempleKey6,
+    TempleKey7,
+    TempleKey8,
+    TempleKey9,
+    EnergyTransferModule,
+    ChargeCombo,
+    #endif
+
     /* This must remain at the end of the list */
     Max
   };
@@ -86,6 +198,14 @@ public:
   };
 
   enum class EBeamId : s32 { Invalid = -1, Power, Ice, Wave, Plasma, Phazon, Phazon2 = 27 };
+
+  #ifdef PRIME2
+  enum class EPowerUpFieldToQuery : u32 {
+    Actual,
+    Minimum,
+    Maximum
+  };
+  #endif
 
 private:
   struct CPowerUp {
@@ -144,7 +264,11 @@ public:
   void EnableItem(EItemType type);
   bool HasPowerUp(EItemType type) const;
   u32 GetItemCapacity(EItemType type) const;
+#ifdef PRIME1
   u32 GetItemAmount(EItemType type) const;
+#else
+  u32 GetItemAmount(EItemType type, bool respectFieldToQuery = true) const;
+#endif
   void DecrPickup(EItemType type, u32 amount);
   void IncrPickup(EItemType type, u32 amount);
   void ResetAndIncrPickUp(EItemType type, u32 amount);
@@ -171,5 +295,10 @@ public:
   static std::string_view ItemTypeToName(EItemType type);
   bool CanTakeDamage() const { return m_canTakeDamage; }
   void SetCanTakeDamage(bool c) { m_canTakeDamage = c; }
+
+  #ifdef PRIME2
+  void IncrementHealth(float delta);
+  EPowerUpFieldToQuery GetPowerUpFieldToQuery(EItemType type) const;
+  #endif
 };
 } // namespace metaforce

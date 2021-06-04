@@ -14,6 +14,10 @@
 #include <zeus/CTransform.hpp>
 #include <zeus/CVector3f.hpp>
 
+#ifdef PRIME2
+#include "Runtime/GameGlobalObjects.hpp"
+#endif
+
 namespace metaforce {
 class CCollidableSphere;
 class CDamageInfo;
@@ -260,9 +264,12 @@ private:
   CSfxHandle x770_damageLoopSfx;
   float x774_samusVoiceTimeout = 0.f;
   CSfxHandle x778_dashSfx;
+  // Prime: x77c; Echoes: x119c
   CSfxHandle x77c_samusVoiceSfx;
   int x780_samusVoicePriority = 0;
+  // Prime: x784; Echoes: x11a0
   float x784_damageSfxTimer = 0.f;
+  // Prime: x788; Echoes: x11a4
   u16 x788_damageLoopSfxId = 0;
   float x78c_footstepSfxTimer = 0.f;
   EFootstepSfx x790_footstepSfxSel = EFootstepSfx::None;
@@ -334,6 +341,44 @@ private:
   float xa28_attachedActorStruggle = 0.f;
   int xa2c_damageLoopSfxDelayTicks = 2;
   float xa30_samusExhaustedVoiceTimer = 4.f;
+
+#ifdef PRIME2
+  // Echoes
+  std::array<short, 4> field_0x130; // TODO: unknown actual size
+
+  // x1268
+  bool echoesFlagsA_31_inSafeZone;
+  // x1269
+  bool echoesFlagsB_31;
+  // x126a
+  bool echoesFlagsC_24;
+  bool echoesFlagsC_30;
+
+  int field_0x12dc;
+  // x1314
+  CPlayerState* playerState = nullptr;
+  // x1318
+  CCameraManager* cameraManager;
+  // x135c
+  float periodForHealSfx;
+  // x1360
+  float lastDarkAetherDamage;
+  // x1364
+  float darkAetherTimeForUnk;
+  // x136c
+  std::pair<TToken<CGenDescription>, TToken<CGenDescription>>* darkAetherElementGenDesc;
+  // x1370
+  std::unique_ptr<CElementGen> darkAetherDamageParticleA;
+  // x1374
+  std::unique_ptr<CElementGen> darkAetherDamageParticleB;
+
+  // x1058
+  CDamageVulnerability vulnerabilityDarkSuit;
+  // x1088
+  CDamageVulnerability vulnerabilityLightSuit;
+  // x10e8
+  CDamageVulnerability vulnerabilityScrewAttack;
+#endif
 
   void StartLandingControlFreeze();
   void EndLandingControlFreeze();
@@ -623,5 +668,23 @@ public:
   bool IsInWaterMovement() const { return x9c4_31_inWaterMovement; }
   void SetNoDamageLoopSfx(bool val) { x9c7_24_noDamageLoopSfx = val; }
   void SetAccelerationChangeTimer(float time) { x2d4_accelerationChangeTimer = time; }
+
+#ifdef PRIME2
+  // Echoes
+  class EchoesTweakPlayer : public DataSpec::ITweakPlayer {
+  public:
+    float GetDarkWorld_0x0() { return 0.0; }
+    float GetDarkWorld_0x4() { return 0.0; }
+    float GetDarkWorld_0x1c() { return 0.0; }
+    float GetDarkWorldDarkSuitReduction() { return 0.0; }
+    CDamageInfo GetDarkWorldDamageInfo() { return CDamageInfo(); }
+  };
+
+  EchoesTweakPlayer* GetTweakPlayer() const;
+  void UpdateDarkAetherDamage(float dt, CStateManager& mgr);
+  short Get_0x1308_Indexed(int param) {
+    return field_0x130[param];
+  }
+#endif
 };
 } // namespace metaforce

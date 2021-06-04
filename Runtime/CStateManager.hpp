@@ -467,5 +467,21 @@ public:
 
   const CGameArea* GetCurrentArea() const;
   void SetWarping(bool warp) { m_warping = warp; }
+
+  #ifdef PRIME2
+  struct astruct_6 {
+    bool FUN_801eaf90(CPlayer* player, CStateManager& mgr) { /* NYI */ return false; }
+  };
+
+  int MaskUIdNumPlayers(TUniqueId uid) const;
+
+  // Echoes: x294c
+  bool echoesFlags_31_inDarkWorld;
+
+  // Echoes: x14f8
+  int numPlayers;
+
+  astruct_6* field_0x1638;
+  #endif
 };
 } // namespace metaforce

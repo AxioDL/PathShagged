@@ -2682,6 +2682,13 @@ void CPlayer::Think(float dt, CStateManager& mgr) {
   }
 
   x794_lastVelocity = x138_velocity;
+
+#ifdef PRIME2
+  // TODO: uncomment when we have Prime 2's CDamageVulnerability
+  // vulnerabilityDarkSuit->AddVulnerability(AreaDark, CWeaponTypeVulnerability(GetTweakPlayer()->GetDarkWorldDarkSuitReduction(), Normal, false));
+  // vulnerabilityScrewAttack->AddVulnerability(AreaDark, CWeaponTypeVulnerability(GetTweakPlayer()->GetDarkWorldDarkSuitReduction(), Normal, false));
+#endif
+
 }
 
 void CPlayer::PreThink(float dt, CStateManager& mgr) {
@@ -6271,5 +6278,168 @@ float CPlayer::GetAverageSpeed() const {
   }
   return x4f8_moveSpeed;
 }
+
+
+#ifdef PRIME2
+// Echoes
+
+CPlayer::EchoesTweakPlayer* CPlayer::GetTweakPlayer() const { return (CPlayer::EchoesTweakPlayer*)g_tweakPlayer;
+}
+
+void CPlayer::UpdateDarkAetherDamage(float dt, CStateManager& mgr) {
+  bool resetTimeForUnk = true;
+  
+  if (!mgr.echoesFlags_31_inDarkWorld) {
+    echoesFlagsA_31_inSafeZone = true;
+  } else {
+    // in dark world
+    echoesFlagsA_31_inSafeZone = mgr.field_0x1638->FUN_801eaf90(this, mgr);
+    if (echoesFlagsA_31_inSafeZone) {
+      periodForHealSfx = std::max(0.0f, periodForHealSfx - dt * GetTweakPlayer()->GetDarkWorld_0x4());
+      
+      if (!echoesFlagsC_24) {
+        float maxHealth = playerState->CalculateHealth();
+        float currentHealth = playerState->GetHealthInfo().GetHP();
+
+        if (currentHealth < maxHealth) {
+          playerState->IncrementHealth(dt);
+          if (!cameraManager->IsInCinematicCamera()) {
+            float newHealth = playerState->GetHealthInfo().GetHP();
+            if (((int)currentHealth < (int)newHealth) && (newHealth < maxHealth)) {
+              float sVar2 = Get_0x1308_Indexed(4);
+              CSfxManager::SfxStart(0x246f, 0x32, sVar2, true, 0, false, 0x100);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (mgr.echoesFlags_31_inDarkWorld) {
+    if (!playerState->HasPowerUp(CPlayerState::EItemType::LightSuit)) {
+      if (!echoesFlagsA_31_inSafeZone) {
+        periodForHealSfx += dt;
+        float tweakValue = GetTweakPlayer()->GetDarkWorld_0x0();
+        if (tweakValue <= periodForHealSfx) {
+          if (!echoesFlagsB_31) {
+            // todo: inclusion list might have something
+            // include = __shl2i(0,1, 0x0000003B);
+            auto splashDamage = CMaterialFilter::MakeIncludeExclude(CMaterialList(), CMaterialList());
+            mgr.ApplyDamage(kInvalidUniqueId, x8_uid, kInvalidUniqueId,
+                            CDamageInfo(GetTweakPlayer()->GetDarkWorldDamageInfo(), dt), splashDamage, zeus::skZero3f);
+          }
+          periodForHealSfx = tweakValue;
+          
+          darkAetherTimeForUnk += dt;
+          if (darkAetherTimeForUnk >= 0.75f) {
+            darkAetherTimeForUnk -= 0.75f;
+          }
+          resetTimeForUnk = false;
+        }
+      }
+      float fVar5 = 0.0f;
+      if (!echoesFlagsB_31) {
+        fVar5 = periodForHealSfx / GetTweakPlayer()->GetDarkWorld_0x0();
+      }
+      
+      auto darkWorld_0x0 = GetTweakPlayer()->GetDarkWorld_0x0();
+      float lastDarkAetherDamage = lastDarkAetherDamage;
+      if (lastDarkAetherDamage <= fVar5) {
+        this->lastDarkAetherDamage = std::min(lastDarkAetherDamage + dt / darkWorld_0x0, 1.0f);
+      } else {
+        this->lastDarkAetherDamage = std::max(lastDarkAetherDamage - dt / darkWorld_0x0, 0.0f);
+      }
+
+      float floatVar = this->lastDarkAetherDamage;
+      if (playerState->HasPowerUp(CPlayerState::EItemType::DarkSuit)) {
+        floatVar = floatVar * GetTweakPlayer()->GetDarkWorld_0x1c();
+      }
+
+      if (!darkAetherDamageParticleA) {
+        auto tokens = darkAetherElementGenDesc;
+        tokens->first.Lock();
+        tokens->second.Lock();
+        if (tokens->first.IsLoaded() && tokens->second.IsLoaded()) {
+          darkAetherDamageParticleA = std::make_unique<CElementGen>(tokens->first);
+          darkAetherDamageParticleB = std::make_unique<CElementGen>(tokens->second);
+        }
+      }
+      if (darkAetherDamageParticleA) {
+        float generatorRate = echoesFlagsA_31_inSafeZone ? 0.0 : floatVar;
+        darkAetherDamageParticleA->SetGeneratorRate(generatorRate);
+        darkAetherDamageParticleB->SetGeneratorRate(generatorRate);
+        if (x2f8_morphBallState == EPlayerMorphBallState::Unmorphed) {
+          if (floatVar >= 0.0f) {
+            darkAetherDamageParticleA->SetTranslation(x490_gun->GetVector_801c6df8());
+          }
+          darkAetherDamageParticleA->Update(dt);
+          // Prime2 addition: darkAetherDamageParticleB->ClearActiveParticles();
+
+        } else {
+          if (floatVar >= 0.0f) {
+            float ballRadius = this->x768_morphball->GetBallRadius();
+            
+            CRandom16* rng = mgr.GetActiveRandom();
+            zeus::CVector3f dir = zeus::skZero3f;
+            do {
+              dir.z() = rng->Range(0.0f, 1.0f);
+              dir.x() = rng->Range(-1.0f, 1.0f);
+              dir.y() = rng->Range(-1.0f, 1.0f);
+            } while (!dir.canBeNormalized());
+            dir.normalize();
+
+            auto vec = x34_transform.origin + ballRadius * dir;
+            vec.z() += ballRadius;
+
+            const zeus::CTransform skIdentity4f{}; // TODO move to zeus & make constexpr
+            darkAetherDamageParticleB->SetGlobalOrientAndTrans(skIdentity4f);
+            darkAetherDamageParticleB->SetTranslation(vec);
+            darkAetherDamageParticleB->SetOrientation(skIdentity4f);
+          }
+
+          darkAetherDamageParticleB->Update(dt);
+          // Prime2 addition: darkAetherDamageParticleA->ClearActiveParticles();
+        }
+      }
+      if (resetTimeForUnk) {
+        this->darkAetherTimeForUnk = 0.0f;
+      }
+      if (!cameraManager->IsInCinematicCamera()) {
+        bool bVar8_00 = false;
+        if ((0.1f < lastDarkAetherDamage) && darkAetherDamageParticleB) {
+          bVar8_00 = true;
+        }
+        if (bVar8_00 && !echoesFlagsC_30 && (1 < field_0x12dc)) {
+          u16 damageLoopSfxId = 0x2193;
+          if (playerState->HasPowerUp(CPlayerState::EItemType::DarkSuit)) {
+            damageLoopSfxId = 0x437;
+          }
+          if ((x788_damageLoopSfxId != damageLoopSfxId) || x77c_samusVoiceSfx) {
+            if (x77c_samusVoiceSfx) {
+              CSfxManager::SfxStop(x77c_samusVoiceSfx);
+            }
+            x788_damageLoopSfxId = damageLoopSfxId;
+            x77c_samusVoiceSfx = CSfxManager::SfxStart(this->x788_damageLoopSfxId, 0x7f, Get_0x1308_Indexed(4),
+                                                             0x7f, 0, true, kInvalidAreaId);
+          }
+          // Unknown actual method
+          // x77c_samusVoiceSfx->FUN_8029e284(static_cast<int>(127.0 * lastDarkAetherDamage));
+          x784_damageSfxTimer = 0.25f;
+        }
+      }
+      return;
+    }
+  }
+
+  periodForHealSfx = 0.0f;
+  darkAetherTimeForUnk = 0.0f;
+  if (darkAetherDamageParticleA) {
+    darkAetherDamageParticleA.reset();
+    darkAetherDamageParticleB.reset();
+    darkAetherElementGenDesc->first.Unlock();
+    darkAetherElementGenDesc->second.Unlock();
+  }
+}
+#endif
 
 } // namespace metaforce

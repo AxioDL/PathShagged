@@ -288,6 +288,7 @@ u32 CPlayerState::GetItemCapacity(CPlayerState::EItemType type) const {
   return 0;
 }
 
+#ifdef PRIME1
 u32 CPlayerState::GetItemAmount(CPlayerState::EItemType type) const {
   if (type == EItemType::SpaceJumpBoots || type == EItemType::PowerBombs || type == EItemType::Flamethrower ||
       type == EItemType::EnergyTanks || type == EItemType::Missiles ||
@@ -297,13 +298,49 @@ u32 CPlayerState::GetItemAmount(CPlayerState::EItemType type) const {
 
   return 0;
 }
+#else
+u32 CPlayerState::GetItemAmount(EItemType type, bool respectFieldToQuery = true) const {
+  if (int(type) < 0 || type >= EItemType::Max) {
+    return 0;
+  }
+  auto query = EPowerUpFieldToQuery::Actual;
+  if (respectFieldToQuery) {
+    query = GetPowerUpFieldToQuery(type);
+  }
+  switch (query) {
+  case EPowerUpFieldToQuery::Actual:
+    return x24_powerups[int(type)].x0_amount;
+  case EPowerUpFieldToQuery::Maximum:
+    return GetPowerUpMaxValue(type);
+  case EPowerUpFieldToQuery::Minimum:
+    return 0;
+  }
+}
+#endif
+
 
 void CPlayerState::DecrPickup(CPlayerState::EItemType type, u32 amount) {
+#ifdef PRIME1
   if (type >= EItemType::Max)
     return;
 
   if ((type == EItemType::Missiles || type >= EItemType::PowerBombs) && type < EItemType::ThermalVisor)
     x24_powerups[u32(type)].x0_amount -= amount;
+
+#else
+  if (int(type) < 0 || type >= EItemType::Max || GetPowerUpFieldToQuery(type) == EPowerUpFieldToQuery::Maximum) {
+    return;
+  }
+  auto& powerup = x24_powerups[u32(type)];
+  if (powerup.x0_amount > amount) {
+    powerup.x0_amount -= amount;
+  } else {
+    powerup.x0_amount = 0;
+  }
+  if (type == EItemType::EnergyTanks) {
+    IncrementHealth(0.0f);
+  }
+#endif
 }
 
 void CPlayerState::IncrPickup(EItemType type, u32 amount) {
@@ -311,6 +348,9 @@ void CPlayerState::IncrPickup(EItemType type, u32 amount) {
     return;
 
   switch (type) {
+#ifdef PRIME1
+  default:
+    break;
   case EItemType::Missiles:
   case EItemType::PowerBombs:
   case EItemType::ChargeBeam:
@@ -327,7 +367,11 @@ void CPlayerState::IncrPickup(EItemType type, u32 amount) {
   case EItemType::Sun:
   case EItemType::World:
   case EItemType::Spirit:
-  case EItemType::Newborn: {
+  case EItemType::Newborn: 
+#else
+  default:
+#endif
+  {
     CPowerUp& pup = x24_powerups[u32(type)];
     pup.x0_amount = std::min(pup.x0_amount + u32(amount), pup.x4_capacity);
 
@@ -337,8 +381,6 @@ void CPlayerState::IncrPickup(EItemType type, u32 amount) {
   }
   case EItemType::HealthRefill:
     xc_health.SetHP(std::min(amount + xc_health.GetHP(), CalculateHealth()));
-    break;
-  default:
     break;
   }
 }
@@ -534,5 +576,59 @@ std::string_view CPlayerState::ItemTypeToName(CPlayerState::EItemType type) {
     return "[unknown]"sv;
   }
 }
+
+
+#ifdef PRIME2
+
+void CPlayerState::IncrementHealth(float delta) {
+  xc_health.SetHP(zeus::clamp(0.0f, xc_health.GetHP() + delta, CalculateHealth()));
+}
+
+CPlayerState::EPowerUpFieldToQuery CPlayerState::GetPowerUpFieldToQuery(EItemType type) const {
+  switch (type) {
+  case EItemType::MorphBall:
+    if (x24_powerups[int(EItemType::DeathBall)].x0_amount != 0) {
+      return EPowerUpFieldToQuery::Minimum;
+    }
+    if (x24_powerups[int(EItemType::DisableBall)].x0_amount != 0) {
+      return EPowerUpFieldToQuery::Minimum;
+    }
+    if (x24_powerups[int(EItemType::Unknown_91)].x0_amount != 0) {
+      return EPowerUpFieldToQuery::Minimum;
+    }
+    break;
+  case EItemType::BoostBall:
+  case EItemType::SpiderBall:
+  case EItemType::MorphBallBombs:
+  case EItemType::PowerBombs:
+    if (x24_powerups[int(EItemType::DeathBall)].x0_amount != 0) {
+      return EPowerUpFieldToQuery::Minimum;
+    }
+    break;
+  case EItemType::SpaceJumpBoots:
+    if (x24_powerups[int(EItemType::DisableSpaceJump)].x0_amount != 0) {
+      return EPowerUpFieldToQuery::Minimum;
+    }
+    break;
+  case EItemType::Missiles:
+    if (x24_powerups[int(EItemType::DisableMissiles)].x0_amount != 0) {
+      return EPowerUpFieldToQuery::Minimum;
+    }
+    if (x24_powerups[int(EItemType::UnlimitedMissiles)].x0_amount != 0) {
+      return EPowerUpFieldToQuery::Maximum;
+    }
+    break;
+  case EItemType::DarkAmmo:
+  case EItemType::LightAmmo:
+    if (x24_powerups[int(EItemType::DisableBeamAmmo)].x0_amount != 0) {
+      return EPowerUpFieldToQuery::Minimum;
+    }
+    if (x24_powerups[int(EItemType::UnlimitedBeamAmmo)].x0_amount != 0) {
+      return EPowerUpFieldToQuery::Maximum;
+    }
+  }
+  return EPowerUpFieldToQuery::Actual;
+}
+#endif
 
 } // namespace metaforce

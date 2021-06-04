@@ -355,6 +355,12 @@ public:
   TUniqueId DropPowerBomb(CStateManager& mgr);
   void SetActorAttached(bool b) { x835_31_actorAttached = b; }
   CAuxWeapon& GetAuxWeapon() const { return *x744_auxWeapon; }
+
+  #ifdef PRIME2
+  zeus::CVector3f GetVector_801c6df8() {
+      return zeus::CVector3f(); 
+  };
+  #endif
 };
 
 } // namespace metaforce

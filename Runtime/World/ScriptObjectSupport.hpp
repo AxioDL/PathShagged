@@ -228,5 +228,9 @@ enum class EScriptObjectMessage {
 std::string_view ScriptObjectTypeToStr(EScriptObjectType type);
 std::string_view ScriptObjectStateToStr(EScriptObjectState state);
 std::string_view ScriptObjectMessageToStr(EScriptObjectMessage message);
+#if PRIME2
+// TODO: Kludge for not having Prime2's AcceptScriptMsg API
+TUniqueId ScriptObjectMessage_GetOriginator(EScriptObjectMessage message) { return kInvalidUniqueId; }
+#endif
 
 } // namespace metaforce
