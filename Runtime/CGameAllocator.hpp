@@ -15,8 +15,6 @@ public:
   CCallStack(int lineNum, const char* lineStr, const char* type) : x0_line(lineStr), x4_type(type) {}
 };
 
-struct SAllocInfo {};
-
 enum class EHint {
   Unk = (1 << 0),
   RoundUpLen = (1 << 1),
@@ -34,18 +32,27 @@ enum class EType {
 
 class IAllocator {
 public:
+  struct SAllocInfo {
+    void* x0_infoPtr;
+    size_t x4_len;
+    bool x8_hasPrevious;
+    bool x9_;
+    const char* xc_fileAndLne;
+    const char* x10_type;
+  };
+
   virtual bool Initialize() = 0; // const COSContext& ctx) = 0;
 
-  virtual void* Alloc() = 0;
-  virtual s32 Free(void* ptr) = 0;
+  virtual void* Alloc(size_t size) = 0;
+  virtual bool Free(void* ptr) = 0;
   virtual void ReleaseAll() = 0;
-  virtual void AllocSecondary() = 0;
-  virtual void FreeSecondary() = 0;
+  virtual void* AllocSecondary(size_t size) = 0;
+  virtual bool FreeSecondary(void* ptr) = 0;
   virtual void ReleaseAllSecondary() = 0;
   virtual void SetOutOfMemoryCallback() = 0;
   virtual void EnumAllocations() = 0;
-  virtual SAllocInfo GetAllocInfo() = 0;
-  virtual void sub80351138() = 0;
+  virtual SAllocInfo GetAllocInfo(void* ptr) = 0;
+  virtual void OffsetFakeStatics(s32 offset) = 0;
   virtual void GetMetrics() = 0;
 };
 
@@ -61,21 +68,25 @@ class CGameAllocator : public IAllocator {
     u32 x1c_canary = 0xeaeaeaea;
   };
   static u32 GetFreeBinEntryForSize(size_t len);
+  SGameMemInfo* GetMemInfoFromBlockPtr(void* ptr) {
+    return reinterpret_cast<SGameMemInfo*>(reinterpret_cast<void*>(intptr_t(ptr) - sizeof(SGameMemInfo)));
+  }
   std::array<SGameMemInfo*, 16> x14_bins;
+
+  s32 xb8_fakeStatics = 0;
 
 public:
   bool Initialize() override; // const COsContext& ctx);
-  void* Alloc() override;
-  s32 Free(void* ptr) override;
+  void* Alloc(size_t size) override;
+  bool Free(void* ptr) override;
   void ReleaseAll() override;
-  void AllocSecondary() override;
-  void FreeSecondary() override;
+  void* AllocSecondary(size_t size) override;
+  bool FreeSecondary(void* ptr) override;
   void ReleaseAllSecondary() override;
   void SetOutOfMemoryCallback() override;
   void EnumAllocations() override;
-  SAllocInfo GetAllocInfo() override;
-  void sub80351138() override;
+  SAllocInfo GetAllocInfo(void* ptr) override;
+  void OffsetFakeStatics(s32 offset) override;
   void GetMetrics() override;
 };
 } // namespace metaforce
-

@@ -32,7 +32,15 @@ void CGameAllocator::FreeSecondary() {}
 void CGameAllocator::ReleaseAllSecondary() {}
 void CGameAllocator::SetOutOfMemoryCallback() {}
 void CGameAllocator::EnumAllocations() {}
-SAllocInfo CGameAllocator::GetAllocInfo() { return SAllocInfo(); }
-void CGameAllocator::sub80351138() {}
+IAllocator::SAllocInfo CGameAllocator::GetAllocInfo(void* ptr) {
+  SGameMemInfo* info = GetMemInfoFromBlockPtr(ptr);
+  return {.x0_infoPtr = info,
+          .x4_len = info->x4_len,
+          .x8_hasPrevious = info->x10_prev != nullptr,
+          .x9_ = false,
+          .xc_fileAndLne = info->x8_line,
+          .x10_type = info->xc_type};
+}
+void CGameAllocator::OffsetFakeStatics(s32 offset) { xb8_fakeStatics += offset; }
 void CGameAllocator::GetMetrics() {}
 } // namespace metaforce
