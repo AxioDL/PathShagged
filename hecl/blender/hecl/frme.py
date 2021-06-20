@@ -320,7 +320,7 @@ def register():
         ('RETRO_ADDITIVE', 'Additive', '', 3),
         ('RETRO_ALPHA_ADDITIVE_OVERDRAW', 'Alpha Additive Overdraw', '', 4)]
     bpy.types.Object.retro_widget_parent = bpy.props.StringProperty(name='Retro: FRME Widget Parent', description='Refers to internal frame widgets')
-    bpy.types.Object.retro_widget_use_anim_controller = bpy.props.BoolProperty(name='Retro: Use Animiation Conroller')
+    bpy.types.Object.retro_widget_use_anim_controller = bpy.props.BoolProperty(name='Retro: Use Animation Controller')
     bpy.types.Object.retro_widget_default_visible = bpy.props.BoolProperty(name='Retro: Default Visible', description='Sets widget is visible by default')
     bpy.types.Object.retro_widget_default_active = bpy.props.BoolProperty(name='Retro: Default Active', description='Sets widget is cases by default')
     bpy.types.Object.retro_widget_cull_faces = bpy.props.BoolProperty(name='Retro: Cull Faces', description='Enables face culling')
