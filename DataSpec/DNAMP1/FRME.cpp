@@ -461,29 +461,6 @@ bool FRME::Extract(const SpecBase& dataSpec, PAKEntryReadStream& rs, const hecl:
     }
 
     zeus::simd_floats colorF(w.header.color.simd);
-<<<<<<< HEAD
-    os.format(FMT_STRING("frme_obj = bpy.data.objects.new(name='{}', object_data=binding)\n"
-                         "frme_obj.pass_index = {}\n"
-                         "parentName = '{}'\n"
-                         "frme_obj.retro_widget_type = 'RETRO_{}'\n"
-                         "frme_obj.retro_widget_use_anim_controller = {}\n"
-                         "frme_obj.retro_widget_default_visible = {}\n"
-                         "frme_obj.retro_widget_default_active = {}\n"
-                         "frme_obj.retro_widget_cull_faces = {}\n"
-                         "frme_obj.retro_widget_color = ({},{},{},{})\n"
-                         "frme_obj.retro_widget_model_draw_flags = "
-                         "bpy.types.Object.retro_widget_model_draw_flags[1]['items'][{}][0]\n"
-                         "frme_obj.retro_widget_is_worker = {}\n"
-                         "frme_obj.retro_widget_worker_id = {}\n"
-                         "if parentName not in bpy.data.objects:\n"
-                         "    frme_obj.retro_widget_parent = parentName\n"
-                         "else:\n"
-                         "    frme_obj.parent = bpy.data.objects[parentName]\n"),
-              w.header.name, pIdx++, w.header.parent, w.type, w.header.useAnimController ? "True" : "False",
-              w.header.defaultVisible ? "True" : "False", w.header.defaultActive ? "True" : "False",
-              w.header.cullFaces ? "True" : "False", colorF[0], colorF[1], colorF[2], colorF[3],
-              w.header.modelDrawFlags, w.isWorker ? "True" : "False", w.workerId);
-=======
     os.format(FMT_STRING(
         "frme_obj = bpy.data.objects.new(name='{}', object_data=binding)\n"
         "frme_obj.pass_index = {}\n"
@@ -505,7 +482,6 @@ bool FRME::Extract(const SpecBase& dataSpec, PAKEntryReadStream& rs, const hecl:
         w.header.useAnimController ? "True" : "False", w.header.defaultVisible ? "True" : "False",
         w.header.defaultActive ? "True" : "False", w.header.cullFaces ? "True" : "False", colorF[0], colorF[1],
         colorF[2], colorF[3], w.header.modelDrawFlags, w.isWorker ? "True" : "False", w.workerId);
->>>>>>> 4433c311a (Fixes for Blender 2.93)
 
     if (w.type == SBIG('MODL')) {
       using MODLInfo = FRME::Widget::MODLInfo;
