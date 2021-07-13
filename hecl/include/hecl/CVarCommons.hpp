@@ -27,6 +27,7 @@ struct CVarCommons {
   CVar* m_texAnisotropy = nullptr;
   CVar* m_deepColor = nullptr;
   CVar* m_variableDt = nullptr;
+  CVar* m_lazyCommitResources = nullptr;
 
   CVar* m_debugOverlayPlayerInfo = nullptr;
   CVar* m_debugOverlayWorldInfo = nullptr;

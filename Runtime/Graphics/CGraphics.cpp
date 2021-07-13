@@ -37,6 +37,7 @@ u32 CGraphics::g_FrameCounter = 0;
 u32 CGraphics::g_Framerate = 0;
 u32 CGraphics::g_FramesPast = 0;
 frame_clock::time_point CGraphics::g_FrameStartTime = frame_clock::now();
+bool CGraphics::g_commitAsLazy = false;
 
 const std::array<zeus::CMatrix3f, 6> CGraphics::skCubeBasisMats{{
     /* Right */

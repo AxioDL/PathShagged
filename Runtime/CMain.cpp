@@ -397,6 +397,7 @@ public:
       m_window->waitForRetrace();
     }
     OPTICK_FRAME("MainThread");
+    CGraphics::SetCommitResourcesAsLazy(m_cvarCommons.m_lazyCommitResources->toBoolean());
 
     boo::SWindowRect rect = m_windowCallback.m_lastRect;
     rect.location = {0, 0};
@@ -463,6 +464,11 @@ public:
       m_imGuiConsole.PostUpdate();
     } else {
       m_imGuiConsole.ShowAboutWindow(false, m_errorString);
+    }
+
+    {
+      OPTICK_EVENT("Flush");
+      CGraphics::SetCommitResourcesAsLazy(false);
     }
 
     {

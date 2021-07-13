@@ -346,8 +346,30 @@ public:
 
   static const boo::SystemChar* PlatformName() { return g_BooPlatformName; }
 
+
+  static bool g_commitAsLazy;
+  static void SetCommitResourcesAsLazy(bool newStatus) {
+    if (newStatus != g_commitAsLazy) {
+      g_commitAsLazy = newStatus;
+      if (!newStatus && g_BooFactory) {
+        g_BooFactory->commitPendingTransaction();
+      }
+    }
+  }
+
   static void CommitResources(const boo::FactoryCommitFunc& commitFunc __BooTraceArgs) {
-    g_BooFactory->commitTransaction(commitFunc __BooTraceArgsUse);
+    CommitResources(commitFunc __BooTraceArgsUse, g_commitAsLazy);
+  }
+
+  static void CommitResources(const boo::FactoryCommitFunc& commitFunc __BooTraceArgs, bool lazy) {
+    if (!g_BooFactory) {
+      return;
+    }
+    if (lazy) {
+      g_BooFactory->lazyCommitTransaction(commitFunc __BooTraceArgsUse);
+    } else {
+      g_BooFactory->commitTransaction(commitFunc __BooTraceArgsUse);
+    }
   }
 
   static void SetShaderDataBinding(const boo::ObjToken<boo::IShaderDataBinding>& binding) {

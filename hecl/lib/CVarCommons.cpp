@@ -24,6 +24,9 @@ CVarCommons::CVarCommons(CVarManager& manager) : m_mgr(manager) {
   m_variableDt = m_mgr.findOrMakeCVar(
       "variableDt", "Enable variable delta time (experimental)", false,
       (hecl::CVar::EFlags::System | hecl::CVar::EFlags::Archive | hecl::CVar::EFlags::ModifyRestart));
+  m_lazyCommitResources = m_mgr.findOrMakeCVar(
+      "lazyCommitResources"sv, "Enable lazy commiting resources to GPU", true,
+      (hecl::CVar::EFlags::System | hecl::CVar::EFlags::Archive));
 
   m_debugOverlayPlayerInfo = m_mgr.findOrMakeCVar(
       "debugOverlay.playerInfo"sv, "Displays information about the player, such as location and orientation"sv, false,
